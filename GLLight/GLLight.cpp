@@ -16,7 +16,7 @@ float g_fScale = 1.0f;
 float g_rotAngle = 45.0f;
 float g_xOffSet = 0.0f;
 float g_yOffSet = 0.0f;
-
+//save model view matrix
 float g_modelview[16]= {
 						1.0f, 0.0f, 0.0f, 0.0f,
 						0.0f, 1.0f, 0.0f, 0.0f,
@@ -24,6 +24,7 @@ float g_modelview[16]= {
 						0.0f, 0.0f, 0.0f, 1.0f 
 						};
 rthlp::CVector3<float> g_axis(1.0f, 0.0f, 0.0f);
+
 
 void Init()
 {
@@ -34,20 +35,19 @@ void Init()
 	//enable lighting
 	glEnable(GL_LIGHT0);
 	glEnable(GL_LIGHTING);
-	glEnable(GL_COLOR_MATERIAL);
-	float ambient[] = { 0.19225f, 0.19225f, 0.19225f, 1.0f };
-	float diffuse[] = { 0.50754f, 0.50754f, 0.50754f, 1.0f };
-	float specular[] = {0.5082373f, 0.5082373f, 0.5082373f, 1.0f};
-	float shininess = 51.2f;
-	float emission[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
+	float ambient[] = { 0.24725f, 0.1995f, 0.0745f, 1.0f };
+	float diffuse[] = { 0.75164f, 0.60648f, 0.22648f, 1.0f };
+	float specular[] = { 0.628281f, 0.555802f, 0.366065f, 1.0f };
+	float shininess[] = { 51.2f };
+	float emission[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	float lightPos[] = {1.0f, 1.0f, 1.0f, 1.0f};
+
 	glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-	glMaterialf(GL_FRONT, GL_SHININESS, shininess);
+	glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
 	glMaterialfv(GL_FRONT, GL_EMISSION, emission);
-
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 }
 
@@ -61,6 +61,7 @@ void Paint()
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
+	//compute rotation matrix
 	glRotatef(g_rotAngle, g_axis.m_data[0], g_axis.m_data[1], g_axis.m_data[2]);
 	g_rotAngle = 0.0f;
 	glMultMatrixf(g_modelview);
@@ -73,8 +74,10 @@ void Paint()
 
 	float lightPos[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
-		
+	
+	
 	glutSolidTeapot(0.3f);
+	
 }
 
 

@@ -16,6 +16,8 @@ float g_fScale = 1.0f;
 float g_rotAngle = 45.0f;
 float g_xOffSet = 0.0f;
 float g_yOffSet = 0.0f;
+bool  g_bHelpInfo = false;
+
 //save model view matrix
 float g_modelview[16]= {
 						1.0f, 0.0f, 0.0f, 0.0f,
@@ -60,6 +62,7 @@ void Paint()
 	glOrtho(-1, 1, -1, 1, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+	glPushMatrix();
 
 	//compute rotation matrix
 	glRotatef(g_rotAngle, g_axis.m_data[0], g_axis.m_data[1], g_axis.m_data[2]);
@@ -75,9 +78,34 @@ void Paint()
 	float lightPos[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 	
-	
+	//render scene
 	glutSolidTeapot(0.3f);
 	
+	glPopMatrix();
+	if (g_bHelpInfo)
+	{
+		glColor4f(0.5f, 0.5f, 0.5f, 0.2f);
+		glDepthMask(GL_FALSE);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDisable(GL_LIGHTING);
+		glBegin(GL_QUADS);
+			glVertex3f(-1, 0, 1);
+			glVertex3f(0, 0, 1);
+			glVertex3f(0, 1, 1);
+			glVertex3f(-1, 1, 1);
+		glEnd();
+
+		glDepthMask(GL_TRUE);
+		glDisable(GL_BLEND);
+
+		glColor3f(1, 1, 1);
+		glListBase(1000);
+		glRasterPos2f(-1, 0.9);
+		char sz[] = "hello, this is a test!\0\0";
+		glCallLists(22, GL_UNSIGNED_BYTE, sz);
+		glEnable(GL_LIGHTING);
+	}
 }
 
 

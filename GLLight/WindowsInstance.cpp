@@ -24,7 +24,11 @@ extern rthlp::CVector3<float> g_axis;
 bool g_bRButtonDown = false;
 rthlp::CVector3<float> g_lastPoint;
 rthlp::CVector3<float> g_currPoint;
-
+RECT g_prevRect;
+DWORD g_dwPrevStyle;
+DWORD g_dwPrevExStyle;
+bool g_bFullScreen = false;
+extern bool g_bHelpInfo;
 
 int APIENTRY WinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE,
@@ -33,7 +37,7 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance,
 {
 	// Initialize global strings
 	WNDCLASS wc;
-	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS;
 	wc.lpfnWndProc = WndProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
@@ -97,6 +101,8 @@ HGLRC SetupGLContext(HWND hWnd, HDC hdc)
 	wglMakeCurrent(hdc, hGLRC);
 	SetWindowTextA(hWnd, (char *)glGetString(GL_VERSION));
 	Init();
+	SelectObject(hdc, GetStockObject(SYSTEM_FONT));
+	wglUseFontBitmaps(hdc, 0, 255, 1000);
 	wglMakeCurrent(NULL, NULL);
 	return hGLRC;
 }
@@ -121,6 +127,11 @@ void OnMouseWheel(HWND hWnd, int xPos, int yPos, int zDelta, UINT)
 
 void OnLButtonDown(HWND hWnd, bool bDoubleClicked, int xPos, int yPos, UINT keyFlags)
 {
+	if (bDoubleClicked)
+	{
+		OutputDebugString(L"double...");
+		return;
+	}
 	RECT rc;
 	GetClientRect(hWnd, &rc);
 	g_lastPoint.MapFromPoint(xPos, yPos, rc.right - rc.left, rc.bottom - rc.top);
@@ -176,6 +187,69 @@ void OnRButtonUp(HWND hWnd, int x, int y, UINT)
 	ReleaseCapture();
 }
 
+void OnLButtonDblClk(HWND hWnd, bool, int x, int y, UINT)
+{
+	if (!g_bFullScreen)
+	{
+		GetWindowRect(hWnd, &g_prevRect);
+		g_dwPrevStyle = GetWindowLong(hWnd, GWL_STYLE);
+		g_dwPrevExStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
+
+		g_bFullScreen = true;
+		MONITORINFO mnInfo;
+		mnInfo.cbSize = sizeof (MONITORINFO);
+		GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST), &mnInfo);
+
+		SetWindowLong(hWnd, GWL_STYLE, g_dwPrevStyle & (~(WS_CAPTION | WS_THICKFRAME)));
+		SetWindowLong(hWnd, GWL_EXSTYLE, g_dwPrevExStyle & (~(WS_EX_DLGMODALFRAME |
+			WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE)));
+
+		SetWindowPos(hWnd, NULL, mnInfo.rcMonitor.left, mnInfo.rcMonitor.top,
+			mnInfo.rcMonitor.right - mnInfo.rcMonitor.left,
+			mnInfo.rcMonitor.bottom - mnInfo.rcMonitor.top,
+			SWP_NOACTIVATE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	}
+	else
+	{
+		g_bFullScreen = false;
+		SetWindowLong(hWnd, GWL_STYLE, g_dwPrevStyle);
+		SetWindowLong(hWnd, GWL_EXSTYLE, g_dwPrevExStyle);
+		SetWindowPos(hWnd, NULL, g_prevRect.left, g_prevRect.top, 
+			g_prevRect.right - g_prevRect.left, 
+			g_prevRect.bottom - g_prevRect.top, 
+			SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+	}
+
+}
+
+
+void OnChar(HWND hWnd, TCHAR ch, int)
+{
+	switch (ch)
+	{
+	case 'q':
+	case 'Q':
+		PostMessage(hWnd, WM_CLOSE, 0, 0);
+		break;
+	case 'H':
+	case 'h':
+		if (!g_bHelpInfo)
+		{
+			g_bHelpInfo = true;
+		}
+		else
+		{
+			g_bHelpInfo = false;
+		}
+		InvalidateRect(hWnd, NULL, FALSE);
+		break;
+	default:
+		break;
+	}
+
+}
+
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static HGLRC hGLRC;
@@ -215,6 +289,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_RBUTTONUP:
 		HANDLE_WM_RBUTTONUP(hWnd, wParam, lParam, OnRButtonUp);
+		break;
+	case WM_LBUTTONDBLCLK:
+		HANDLE_WM_LBUTTONDBLCLK(hWnd, wParam, lParam, OnLButtonDblClk);
+		break;
+	case WM_CHAR:
+		HANDLE_WM_CHAR(hWnd, wParam, lParam, OnChar);
 		break;
 	case WM_DESTROY:
 		wglDeleteContext(hGLRC);
